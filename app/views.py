@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from .models import NewsArticle
+from app.services.news_fetcher import fetch_news  # Import fetch_news
 
 def index(request):
     """Retrieve news articles with AJAX filtering."""
@@ -16,7 +17,7 @@ def index(request):
     if selected_sentiment:
         articles = articles.filter(sentiment=selected_sentiment)
 
-    # AJAX Request: Return JSON response
+    # AJAX Request: Return JSON response for filtering
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         articles_data = [
             {
@@ -45,3 +46,11 @@ def index(request):
             "selected_sentiment": selected_sentiment,
         },
     )
+
+def refresh_articles(request):
+    """Manually trigger the fetch_news function to get the latest articles."""
+    fetch_news()  # Call the function to fetch the latest news articles
+    return JsonResponse({"status": "success", "message": "Articles refreshed!"})
+
+def about(request):
+    return render(request, "about.html")

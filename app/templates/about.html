@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="container mx-auto text-center mt-12">
+    <h1 class="text-4xl font-bold mb-8">About SentiNews</h1>
+    <p class="text-lg mb-8">
+        Welcome to SentiNews, your go-to platform for the latest news articles, sorted and filtered by their sentiment score. 
+        We aggregate news from various sources and process them using natural language processing (NLP) techniques to classify 
+        each article as positive, neutral, or negative. 
+        Whether you're looking for positive stories or prefer to focus on the negative, 
+        SentiNews gives you the power to filter and view articles based on your mood or needs.
+    </p>
+
+    <!-- Vertical List -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 32px;">
+        <!-- GitHub -->
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <img src="{% static 'img/github-mark.svg' %}" alt="GitHub" style="width: 32px; height: 32px;">
+            <a href="https://github.com/samork26" target="_blank" class="text-lg font-semibold text-gray-700 hover:text-blue-500">
+                samork26
+            </a>
+        </div>
+
+        <!-- LinkedIn -->
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <img src="{% static 'img/linkedin.svg' %}" alt="LinkedIn" style="width: 32px; height: 32px;">
+            <a href="https://linkedin.com/in/samarthvohra26" target="_blank" class="text-lg font-semibold text-gray-700 hover:text-blue-500">
+                samarthvohra26
+            </a>
+        </div>
+
+        <!-- Email -->
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <img src="{% static 'img/gmail.svg' %}" alt="Email" style="width: 32px; height: 32px;">
+            <a href="mailto:vohra207@gmail.com" class="text-lg font-semibold text-gray-700 hover:text-blue-500">
+                vohra207@gmail.com
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

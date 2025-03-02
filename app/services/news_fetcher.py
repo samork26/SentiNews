@@ -19,7 +19,7 @@ def fetch_news():
     """Fetches news articles from NewsAPI for multiple categories and stores them in the database."""
     for category in CATEGORIES:
         print(f"📡 Fetching {category.capitalize()} news...")
-        
+
         top_headlines = newsapi.get_top_headlines(
             category=category,
             language="en",
@@ -29,6 +29,8 @@ def fetch_news():
         if "articles" not in top_headlines:
             print(f"⚠️ No articles found for {category}!")
             continue
+
+        new_articles_count = 0  # Initialize counter for new articles
 
         for article in top_headlines["articles"]:
             title = article["title"]
@@ -48,5 +50,10 @@ def fetch_news():
                     published_at=published_at,
                     category=category.capitalize()
                 )
+                new_articles_count += 1  # Increment counter for new articles
 
-        print(f"✅ {category.capitalize()} news fetched successfully!")
+        if new_articles_count > 0:
+            print(f"✅ {new_articles_count} new articles fetched for {category.capitalize()}!")
+        else:
+            print(f"⚠️ No new articles for {category.capitalize()}.")
+
