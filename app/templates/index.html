@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Latest News{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">📰 Latest News</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for article in articles %}
+    <div class="bg-white p-4 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold">
+            <a href="{{ article.url }}" target="_blank" class="text-blue-600 hover:underline">
+                {{ article.title }}
+            </a>
+        </h2>
+        <p class="text-sm text-gray-500">{{ article.published_at|date:"F d, Y H:i" }}</p>
+        
+        <span class="inline-block px-3 py-1 mt-2 rounded-full text-white
+            {% if article.sentiment == 'Positive' %} bg-green-500
+            {% elif article.sentiment == 'Negative' %} bg-red-500
+            {% else %} bg-gray-500 {% endif %}">
+            {{ article.sentiment }}
+        </span>
+    </div>
+    {% empty %}
+    <p class="text-gray-600">No news articles available.</p>
+    {% endfor %}
+</div>
+{% endblock %}
