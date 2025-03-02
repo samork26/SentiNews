@@ -84,7 +84,7 @@
         // Event listener for the refresh button click
         refreshButton.addEventListener("click", function() {
             // Fetch the latest articles by triggering the refresh_articles endpoint
-            fetch("/refresh/", {
+            fetch("refresh", {
                 method: "GET",
             })
             .then(response => response.json())
