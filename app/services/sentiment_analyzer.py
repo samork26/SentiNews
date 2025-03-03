@@ -5,12 +5,12 @@ from app.models import NewsArticle
 POSITIVE_WORDS = {
     "profit", "growth", "success", "win", "record", "innovation", "strong", "rise", 
     "optimistic", "gains", "increase", "improve", "advancement", 
-    "stunner", "comeback", "clutch", "dominant", "amazing", "upset", "pull off", "stable", "good health", "good", "fix"
+    "stunner", "comeback", "clutch", "dominant", "amazing", "upset", "pull off", "stable", "good health", "good", "fix", "new"
 }
 
 NEGATIVE_WORDS = {
     "crash", "decline", "loss", "fail", "drop", "problem", "risk", "cut", "pessimistic", 
-    "downturn", "plummet", "reduce", "collapse", "hope is fading", "no hope", "hopeless"
+    "downturn", "plummet", "reduce", "collapse", "hope is fading", "no hope", "hopeless", "fatal", "suing"
 }
 
 def analyze_sentiment():

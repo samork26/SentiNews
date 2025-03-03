@@ -50,8 +50,13 @@
                 Refresh Articles
             </button>
         </div>
-
     </form>
+</div>
+
+<!-- News Type Selection -->
+<div class="flex space-x-4 my-6">
+    <button id="all-news-btn" class="px-4 py-2 bg-blue-500 text-white rounded">All News</button>
+    <button id="local-news-btn" class="px-4 py-2 bg-gray-500 text-white rounded">Local News</button>
 </div>
 
 <!-- News Articles -->
@@ -79,90 +84,129 @@
     {% endfor %}
 </div>
 
-<!-- JavaScript for Refresh Button -->
+<!-- JavaScript for Fetching News -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const newsContainer = document.getElementById("news-container");
-        const categoryFilter = document.getElementById("category-filter");
-        const sentimentFilter = document.getElementById("sentiment-filter");
-
-        // ✅ Ensure filters update articles dynamically
-        categoryFilter.addEventListener("change", fetchFilteredNews);
-        sentimentFilter.addEventListener("change", fetchFilteredNews);
+    
+        document.getElementById("category-filter").addEventListener("change", fetchFilteredNews);
+        document.getElementById("sentiment-filter").addEventListener("change", fetchFilteredNews);
+        document.getElementById("local-news-btn").addEventListener("click", fetchLocalNews);
+        document.getElementById("all-news-btn").addEventListener("click", fetchFilteredNews);
     });
-
-// ✅ Move fetchFilteredNews() to the global scope so refresh() can access it
+    
     function fetchFilteredNews() {
-        const category = document.getElementById("category-filter").value;
-        const sentiment = document.getElementById("sentiment-filter").value;
-        const url = `?category=${category}&sentiment=${sentiment}`;
-
-        fetch(url, {
-            headers: {
-                "X-Requested-With": "XMLHttpRequest"
-            }
+        setActiveTab("all-news-btn");
+        fetch("/?category=" + document.getElementById("category-filter").value + "&sentiment=" + document.getElementById("sentiment-filter").value, { 
+            headers: { "X-Requested-With": "XMLHttpRequest" } 
         })
         .then(response => response.json())
-        .then(data => {
-            const newsContainer = document.getElementById("news-container");
-            newsContainer.innerHTML = "";
-            if (data.articles.length === 0) {
-                newsContainer.innerHTML = `<p class="text-gray-600 col-span-3 text-center">No news articles available for the selected filters.</p>`;
-            } else {
-                data.articles.forEach(article => {
-                    const articleHTML = `
-                        <div class="news-item bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
-                            <h2 class="text-xl font-semibold">
-                                <a href="${article.url}" target="_blank" class="text-blue-600 hover:underline">
-                                    ${article.title}
-                                </a>
-                            </h2>
-                            <p class="text-sm text-gray-500 mt-2">${article.published_at}</p>
-                            <span class="inline-block px-3 py-1 mt-2 rounded-full text-white text-sm font-medium 
-                                ${article.sentiment === 'Positive' ? 'bg-green-500' : 
-                                article.sentiment === 'Negative' ? 'bg-red-500' : 'bg-gray-500'}">
-                                ${article.sentiment}
-                            </span>
-                            <span class="ml-2 text-sm text-gray-700">(${article.category})</span>
-                        </div>
-                    `;
-                    newsContainer.innerHTML += articleHTML;
-                });
-            }
-        })
+        .then(data => renderArticles(data.articles))
         .catch(error => console.error("❌ Error fetching filtered news:", error));
     }
-
-    // ✅ Ensure refresh() is in the global scope
+    
+    function fetchLocalNews() {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+    
+            fetch(`/fetch_local_news?lat=${lat}&lon=${lon}`)
+            .then(response => response.json())
+            .then(data => {
+                renderArticles(data.articles);
+                setActiveTab("local-news-btn");
+            })
+            .catch(error => console.error("❌ Error fetching local news:", error));
+        }, () => alert("❌ Location access denied."));
+    }
+    
     async function refresh(event) {
         if (event) event.preventDefault();
-        try {
-            console.log("✅ Refresh button clicked, sending request...");
 
-            const response = await fetch("/refresh", {
+        // Determine the current active tab
+        const isLocalNewsActive = document.getElementById("local-news-btn").classList.contains("bg-blue-500");
+
+        // Get user's current location if needed
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            fetch(`/refresh?lat=${lat}&lon=${lon}`, {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`❌ Failed to refresh articles: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log("✅ Parsed JSON data:", data);
-
-            if (data.status === "success") {
-                alert(data.message);
-                fetchFilteredNews();  // ✅ Now it works because it's in global scope
-            } else {
-                alert("❌ Error refreshing articles.");
-            }
-        } catch (error) {
-            console.error("❌ Error refreshing articles:", error);
-        }
+                headers: { "Content-Type": "application/json" },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert(data.message);
+                    if (isLocalNewsActive) {
+                        fetchLocalNews(); // Stay on Local News tab
+                    } else {
+                        fetchFilteredNews(); // Stay on All News tab
+                    }
+                } else {
+                    alert("❌ Error refreshing articles.");
+                }
+            })
+            .catch(error => console.error("❌ Error refreshing articles:", error));
+        }, () => {
+            alert("❌ Location access denied. Refreshing only global news.");
+            fetch(`/refresh`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert(data.message);
+                    if (isLocalNewsActive) {
+                        fetchLocalNews(); // Stay on Local News tab
+                    } else {
+                        fetchFilteredNews(); // Stay on All News tab
+                    }
+                } else {
+                    alert("❌ Error refreshing articles.");
+                }
+            })
+            .catch(error => console.error("❌ Error refreshing articles:", error));
+        });
     }
 
-</script>
+    function setActiveTab(activeButtonId) {
+        document.getElementById("all-news-btn").classList.toggle("bg-blue-500", activeButtonId === "all-news-btn");
+        document.getElementById("all-news-btn").classList.toggle("bg-gray-500", activeButtonId !== "all-news-btn");
+    
+        document.getElementById("local-news-btn").classList.toggle("bg-blue-500", activeButtonId === "local-news-btn");
+        document.getElementById("local-news-btn").classList.toggle("bg-gray-500", activeButtonId !== "local-news-btn");
+    }
+    
+    function renderArticles(articles) {
+        const newsContainer = document.getElementById("news-container");
+        newsContainer.innerHTML = "";
+    
+        if (articles.length === 0) {
+            newsContainer.innerHTML = `<p class="text-gray-600 col-span-3 text-center">No news articles available.</p>`;
+        } else {
+            articles.forEach(article => {
+                newsContainer.innerHTML += `
+                    <div class="news-item bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                        <h2 class="text-xl font-semibold">
+                            <a href="${article.url}" target="_blank" class="text-blue-600 hover:underline">
+                                ${article.title}
+                            </a>
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-2">${article.published_at}</p>
+                        <span class="inline-block px-3 py-1 mt-2 rounded-full text-white text-sm font-medium 
+                            ${article.sentiment === 'Positive' ? 'bg-green-500' : 
+                            article.sentiment === 'Negative' ? 'bg-red-500' : 'bg-gray-500'}">
+                            ${article.sentiment}
+                        </span>
+                        <span class="ml-2 text-sm text-gray-700">(${article.category})</span>
+                    </div>
+                `;
+            });
+        }
+    }
+    </script>
+    
 {% endblock %}

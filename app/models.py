@@ -19,8 +19,22 @@ class NewsArticle(models.Model):
         ('Neutral', 'Neutral'),
     ], default="Neutral")
 
-    class Meta:
-        ordering = ["-published_at"]  # Order articles by latest news first
+class LocalNews(models.Model):
+    """Stores local news articles separately from global news."""
+    title = models.CharField(max_length=255)
+    url = models.URLField(unique=True)
+    source = models.CharField(max_length=100)
+    published_at = models.DateTimeField()
+    category = models.CharField(max_length=50)  # Technology, Business, etc.
+    sentiment = models.CharField(max_length=20, blank=True, null=True)
+    location = models.CharField(max_length=100)  # City or region
+
+    def __str__(self):
+        return f"{self.title} - {self.location}"
+
+
+class Meta:
+    ordering = ["-published_at"]  # Order articles by latest news first
 
     def __str__(self):
         return f"{self.title} - {self.source}"
