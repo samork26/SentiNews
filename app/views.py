@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.http import JsonResponse
-from .models import NewsArticle
+from .models import NewsArticle, LocalNews
 from app.services.news_fetcher import fetch_news, fetch_local_news
 from app.services.sentiment_analyzer import analyze_sentiment
 
 def index(request):
-    """Retrieve news articles with AJAX filtering."""
+    """Retrieve global news articles with AJAX filtering."""
     articles = NewsArticle.objects.all().order_by("-published_at")
 
     selected_category = request.GET.get("category", "")
@@ -43,7 +43,6 @@ def refresh_articles(request):
     """Refresh both global and local news dynamically using the user's location."""
     fetch_news()  # Refresh global news
 
-    # Get latitude & longitude from the request
     lat = request.GET.get("lat")
     lon = request.GET.get("lon")
 
@@ -63,8 +62,13 @@ def refresh_articles(request):
 
 
 def fetch_local_news_view(request):
-    """Retrieve existing local news articles from the database."""
-    articles = NewsArticle.objects.filter(category="Local").order_by("-published_at")
+    """Retrieve existing local news articles with filtering."""
+    articles = LocalNews.objects.all().order_by("-published_at")
+
+    selected_category = request.GET.get("category", "")
+
+    if selected_category:
+        articles = articles.filter(category=selected_category)
 
     return JsonResponse({"articles": [
         {
@@ -73,10 +77,10 @@ def fetch_local_news_view(request):
             "published_at": article.published_at.strftime("%B %d, %Y %I:%M %p"),
             "sentiment": article.sentiment,
             "category": article.category,
+            "location": article.location,
         }
         for article in articles
     ]})
-
 
 def about(request):
     return render(request, "about.html")

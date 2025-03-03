@@ -123,10 +123,13 @@
     async function refresh(event) {
         if (event) event.preventDefault();
 
+        const refreshButton = document.querySelector("button[onclick='refresh()']");
+        refreshButton.textContent = "Loading...";
+        refreshButton.disabled = true;  // Prevent multiple clicks
+
         // Determine the current active tab
         const isLocalNewsActive = document.getElementById("local-news-btn").classList.contains("bg-blue-500");
 
-        // Get user's current location if needed
         navigator.geolocation.getCurrentPosition((position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
@@ -139,6 +142,7 @@
             .then(data => {
                 if (data.status === "success") {
                     alert(data.message);
+                    refreshButton.textContent = "Done!";
                     if (isLocalNewsActive) {
                         fetchLocalNews(); // Stay on Local News tab
                     } else {
@@ -148,7 +152,16 @@
                     alert("❌ Error refreshing articles.");
                 }
             })
-            .catch(error => console.error("❌ Error refreshing articles:", error));
+            .catch(error => {
+                console.error("❌ Error refreshing articles:", error);
+                refreshButton.textContent = "Error!";
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    refreshButton.textContent = "Refresh Articles";
+                    refreshButton.disabled = false;  // Re-enable button
+                }, 1500);
+            });
         }, () => {
             alert("❌ Location access denied. Refreshing only global news.");
             fetch(`/refresh`, {
@@ -159,18 +172,29 @@
             .then(data => {
                 if (data.status === "success") {
                     alert(data.message);
+                    refreshButton.textContent = "Done!";
                     if (isLocalNewsActive) {
-                        fetchLocalNews(); // Stay on Local News tab
+                        fetchLocalNews();
                     } else {
-                        fetchFilteredNews(); // Stay on All News tab
+                        fetchFilteredNews();
                     }
                 } else {
                     alert("❌ Error refreshing articles.");
                 }
             })
-            .catch(error => console.error("❌ Error refreshing articles:", error));
+            .catch(error => {
+                console.error("❌ Error refreshing articles:", error);
+                refreshButton.textContent = "Error!";
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    refreshButton.textContent = "Refresh Articles";
+                    refreshButton.disabled = false;
+                }, 1500);
+            });
         });
     }
+
 
     function setActiveTab(activeButtonId) {
         document.getElementById("all-news-btn").classList.toggle("bg-blue-500", activeButtonId === "all-news-btn");
