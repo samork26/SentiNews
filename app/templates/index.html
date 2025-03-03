@@ -5,18 +5,26 @@
 {% block content %}
 <h1 class="text-3xl font-bold mb-6 text-center">📰 Latest News</h1>
 
+<!-- News Type Selection -->
+<div class="flex space-x-4 my-6">
+    <button id="all-news-btn" class="px-4 py-2 bg-blue-500 text-white rounded">All News</button>
+    <button id="local-news-btn" class="px-4 py-2 bg-gray-500 text-white rounded">Local News</button>
+</div>
+
 <!-- Filtering Section -->
 <div class="bg-gray-100 p-4 rounded-lg shadow-md flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
     <form id="filter-form" class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full">
-        <!-- Category Filter -->
+        <!-- Category Filter (Local News handled separately) -->
         <div class="relative">
             <label class="text-gray-700 font-medium">Category</label>
             <select name="category" id="category-filter" class="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300">
                 <option value="">All Categories</option>
                 {% for category in categories %}
+                {% if category != "Local" %}  <!-- Remove "Local" from dropdown -->
                 <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
                     {{ category }}
                 </option>
+                {% endif %}
                 {% endfor %}
             </select>
         </div>
@@ -53,12 +61,6 @@
     </form>
 </div>
 
-<!-- News Type Selection -->
-<div class="flex space-x-4 my-6">
-    <button id="all-news-btn" class="px-4 py-2 bg-blue-500 text-white rounded">All News</button>
-    <button id="local-news-btn" class="px-4 py-2 bg-gray-500 text-white rounded">Local News</button>
-</div>
-
 <!-- News Articles -->
 <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
     {% for article in articles %}
@@ -87,16 +89,26 @@
 <!-- JavaScript for Fetching News -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const newsContainer = document.getElementById("news-container");
-    
         document.getElementById("category-filter").addEventListener("change", fetchFilteredNews);
         document.getElementById("sentiment-filter").addEventListener("change", fetchFilteredNews);
         document.getElementById("local-news-btn").addEventListener("click", fetchLocalNews);
-        document.getElementById("all-news-btn").addEventListener("click", fetchFilteredNews);
+        document.getElementById("all-news-btn").addEventListener("click", fetchGlobalNews);
     });
-    
+
     function fetchFilteredNews() {
+        const activeTab = document.querySelector(".bg-blue-500"); // Get active tab
+        const isLocalNewsActive = activeTab.id === "local-news-btn";
+
+        if (isLocalNewsActive) {
+            fetchLocalNews();
+        } else {
+            fetchGlobalNews();
+        }
+    }
+
+    function fetchGlobalNews() {
         setActiveTab("all-news-btn");
+
         fetch("/?category=" + document.getElementById("category-filter").value + "&sentiment=" + document.getElementById("sentiment-filter").value, { 
             headers: { "X-Requested-With": "XMLHttpRequest" } 
         })
@@ -104,110 +116,33 @@
         .then(data => renderArticles(data.articles))
         .catch(error => console.error("❌ Error fetching filtered news:", error));
     }
-    
+
     function fetchLocalNews() {
+        setActiveTab("local-news-btn");
+
         navigator.geolocation.getCurrentPosition((position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-    
-            fetch(`/fetch_local_news?lat=${lat}&lon=${lon}`)
+
+            fetch(`/fetch_local_news?lat=${lat}&lon=${lon}&category=${document.getElementById("category-filter").value}&sentiment=${document.getElementById("sentiment-filter").value}`)
             .then(response => response.json())
-            .then(data => {
-                renderArticles(data.articles);
-                setActiveTab("local-news-btn");
-            })
+            .then(data => renderArticles(data.articles))
             .catch(error => console.error("❌ Error fetching local news:", error));
         }, () => alert("❌ Location access denied."));
     }
-    
-    async function refresh(event) {
-        if (event) event.preventDefault();
-
-        const refreshButton = document.querySelector("button[onclick='refresh()']");
-        refreshButton.textContent = "Loading...";
-        refreshButton.disabled = true;  // Prevent multiple clicks
-
-        // Determine the current active tab
-        const isLocalNewsActive = document.getElementById("local-news-btn").classList.contains("bg-blue-500");
-
-        navigator.geolocation.getCurrentPosition((position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-
-            fetch(`/refresh?lat=${lat}&lon=${lon}`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    alert(data.message);
-                    refreshButton.textContent = "Done!";
-                    if (isLocalNewsActive) {
-                        fetchLocalNews(); // Stay on Local News tab
-                    } else {
-                        fetchFilteredNews(); // Stay on All News tab
-                    }
-                } else {
-                    alert("❌ Error refreshing articles.");
-                }
-            })
-            .catch(error => {
-                console.error("❌ Error refreshing articles:", error);
-                refreshButton.textContent = "Error!";
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    refreshButton.textContent = "Refresh Articles";
-                    refreshButton.disabled = false;  // Re-enable button
-                }, 1500);
-            });
-        }, () => {
-            alert("❌ Location access denied. Refreshing only global news.");
-            fetch(`/refresh`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    alert(data.message);
-                    refreshButton.textContent = "Done!";
-                    if (isLocalNewsActive) {
-                        fetchLocalNews();
-                    } else {
-                        fetchFilteredNews();
-                    }
-                } else {
-                    alert("❌ Error refreshing articles.");
-                }
-            })
-            .catch(error => {
-                console.error("❌ Error refreshing articles:", error);
-                refreshButton.textContent = "Error!";
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    refreshButton.textContent = "Refresh Articles";
-                    refreshButton.disabled = false;
-                }, 1500);
-            });
-        });
-    }
-
 
     function setActiveTab(activeButtonId) {
         document.getElementById("all-news-btn").classList.toggle("bg-blue-500", activeButtonId === "all-news-btn");
         document.getElementById("all-news-btn").classList.toggle("bg-gray-500", activeButtonId !== "all-news-btn");
-    
+
         document.getElementById("local-news-btn").classList.toggle("bg-blue-500", activeButtonId === "local-news-btn");
         document.getElementById("local-news-btn").classList.toggle("bg-gray-500", activeButtonId !== "local-news-btn");
     }
-    
+
     function renderArticles(articles) {
         const newsContainer = document.getElementById("news-container");
         newsContainer.innerHTML = "";
-    
+
         if (articles.length === 0) {
             newsContainer.innerHTML = `<p class="text-gray-600 col-span-3 text-center">No news articles available.</p>`;
         } else {
@@ -231,6 +166,6 @@
             });
         }
     }
-    </script>
-    
+</script>
+
 {% endblock %}
