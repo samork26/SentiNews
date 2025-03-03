@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from .models import NewsArticle
 from app.services.news_fetcher import fetch_news  # Import fetch_news
+from app.services.sentiment_analyzer import analyze_sentiment
 
 def index(request):
     """Retrieve news articles with AJAX filtering."""
@@ -50,6 +51,7 @@ def index(request):
 def refresh_articles(request):
     """Manually trigger the fetch_news function to get the latest articles."""
     fetch_news()  # Call the function to fetch the latest news articles
+    analyze_sentiment()
     return JsonResponse({"status": "success", "message": "Articles refreshed!"})
 
 def about(request):

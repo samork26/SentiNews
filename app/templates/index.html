@@ -43,10 +43,14 @@
 
         <!-- Refresh Button -->
         <div class="flex items-end mb-4">
-            <button id="refresh-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <button 
+                type="button"
+                onclick="refresh()" 
+                class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 shadow-lg">
                 Refresh Articles
             </button>
         </div>
+
     </form>
 </div>
 
@@ -77,68 +81,88 @@
 
 <!-- JavaScript for Refresh Button -->
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const refreshButton = document.getElementById("refresh-btn");
+    document.addEventListener("DOMContentLoaded", function () {
         const newsContainer = document.getElementById("news-container");
-    
-        // Event listener for the refresh button click
-        refreshButton.addEventListener("click", function() {
-            // Fetch the latest articles by triggering the refresh_articles endpoint
-            fetch("refresh", {
-                method: "GET",
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    alert(data.message);  // Optional: show success message
-                    // After refresh, fetch the latest articles
-                    fetchFilteredNews();
-                } else {
-                    alert("Error refreshing articles.");
-                }
-            });
-        });
-    
-        // Function to fetch filtered news articles
-        function fetchFilteredNews() {
-            const category = document.getElementById("category-filter").value;
-            const sentiment = document.getElementById("sentiment-filter").value;
-            const url = `?category=${category}&sentiment=${sentiment}`;
-    
-            fetch(url, {
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                newsContainer.innerHTML = "";
-                if (data.articles.length === 0) {
-                    newsContainer.innerHTML = `<p class="text-gray-600 col-span-3 text-center">No news articles available for the selected filters.</p>`;
-                } else {
-                    data.articles.forEach(article => {
-                        const articleHTML = `
-                            <div class="news-item bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
-                                <h2 class="text-xl font-semibold">
-                                    <a href="${article.url}" target="_blank" class="text-blue-600 hover:underline">
-                                        ${article.title}
-                                    </a>
-                                </h2>
-                                <p class="text-sm text-gray-500 mt-2">${article.published_at}</p>
-                                <span class="inline-block px-3 py-1 mt-2 rounded-full text-white text-sm font-medium 
-                                    ${article.sentiment === 'Positive' ? 'bg-green-500' : 
-                                    article.sentiment === 'Negative' ? 'bg-red-500' : 'bg-gray-500'}">
-                                    ${article.sentiment}
-                                </span>
-                                <span class="ml-2 text-sm text-gray-700">(${article.category})</span>
-                            </div>
-                        `;
-                        newsContainer.innerHTML += articleHTML;
-                    });
-                }
-            });
-        }
+        const categoryFilter = document.getElementById("category-filter");
+        const sentimentFilter = document.getElementById("sentiment-filter");
+
+        // ✅ Ensure filters update articles dynamically
+        categoryFilter.addEventListener("change", fetchFilteredNews);
+        sentimentFilter.addEventListener("change", fetchFilteredNews);
     });
-    </script>
-    
+
+// ✅ Move fetchFilteredNews() to the global scope so refresh() can access it
+    function fetchFilteredNews() {
+        const category = document.getElementById("category-filter").value;
+        const sentiment = document.getElementById("sentiment-filter").value;
+        const url = `?category=${category}&sentiment=${sentiment}`;
+
+        fetch(url, {
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const newsContainer = document.getElementById("news-container");
+            newsContainer.innerHTML = "";
+            if (data.articles.length === 0) {
+                newsContainer.innerHTML = `<p class="text-gray-600 col-span-3 text-center">No news articles available for the selected filters.</p>`;
+            } else {
+                data.articles.forEach(article => {
+                    const articleHTML = `
+                        <div class="news-item bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+                            <h2 class="text-xl font-semibold">
+                                <a href="${article.url}" target="_blank" class="text-blue-600 hover:underline">
+                                    ${article.title}
+                                </a>
+                            </h2>
+                            <p class="text-sm text-gray-500 mt-2">${article.published_at}</p>
+                            <span class="inline-block px-3 py-1 mt-2 rounded-full text-white text-sm font-medium 
+                                ${article.sentiment === 'Positive' ? 'bg-green-500' : 
+                                article.sentiment === 'Negative' ? 'bg-red-500' : 'bg-gray-500'}">
+                                ${article.sentiment}
+                            </span>
+                            <span class="ml-2 text-sm text-gray-700">(${article.category})</span>
+                        </div>
+                    `;
+                    newsContainer.innerHTML += articleHTML;
+                });
+            }
+        })
+        .catch(error => console.error("❌ Error fetching filtered news:", error));
+    }
+
+    // ✅ Ensure refresh() is in the global scope
+    async function refresh(event) {
+        if (event) event.preventDefault();
+        try {
+            console.log("✅ Refresh button clicked, sending request...");
+
+            const response = await fetch("/refresh", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`❌ Failed to refresh articles: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log("✅ Parsed JSON data:", data);
+
+            if (data.status === "success") {
+                alert(data.message);
+                fetchFilteredNews();  // ✅ Now it works because it's in global scope
+            } else {
+                alert("❌ Error refreshing articles.");
+            }
+        } catch (error) {
+            console.error("❌ Error refreshing articles:", error);
+        }
+    }
+
+</script>
 {% endblock %}
